@@ -22,29 +22,33 @@ namespace Events
 
         public void RegisterEventHandler(EventHandlerDelegate evtHandlerDel)
         {
-            try
+            if (callingNum > 0)
             {
-                if (callingNum > 0)
+                lock (syncListRoot)
                 {
-                    lock (syncListRoot)
+                    if (!evtHandlerDelList.Contains(evtHandlerDel))
                     {
                         addList.Add(evtHandlerDel);
                     }
-                }
-                else
-                {
-                    lock (syncListRoot)
+                    else
                     {
-                        if (!evtHandlerDelList.Contains(evtHandlerDel))
-                        {
-                            evtHandlerDelList.Add(evtHandlerDel);
-                        }
+                        LogException(new Exception("The TinyEvent already has the del : " + evtHandlerDel.ToString()));
                     }
                 }
             }
-            catch (Exception e)
+            else
             {
-                LogException(e);
+                lock (syncListRoot)
+                {
+                    if (!evtHandlerDelList.Contains(evtHandlerDel))
+                    {
+                        evtHandlerDelList.Add(evtHandlerDel);
+                    }
+                    else
+                    {
+                        LogException(new Exception("The TinyEvent already has the del : " + evtHandlerDel.ToString()));
+                    }
+                }
             }
         }
 
@@ -67,7 +71,7 @@ namespace Events
                     }
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 LogException(e);
             }
@@ -85,6 +89,188 @@ namespace Events
             Debug.LogError(stringBuilder.ToString());
         }
 
-        继续写,Invoke记得lockCallingNum并++
+        private void ModifyEvtHandlerDelList()
+        {
+            if (removeList != null && removeList.Count > 0)
+            {
+                for (int i = 0; i < removeList.Count; i++)
+                {
+                    evtHandlerDelList.Remove(removeList[i]);
+                }
+            }
+
+            if (addList != null && addList.Count > 0)
+            {
+                for (int i = 0; i < addList.Count; i++)
+                {
+                    evtHandlerDelList.Add(addList[i]);
+                }
+            }
+        }
+
+        public void SendEvent()
+        {
+            lock (syncCallingNum)
+            {
+                callingNum++;
+            }
+
+            try
+            {
+                for (int i = 0; i < evtHandlerDelList.Count; i++)
+                {
+                    Action ac = evtHandlerDelList[i] as Action;
+                    if (ac != null)
+                    {
+                        ac();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LogException(e);
+            }
+            finally
+            {
+                lock (syncCallingNum)
+                {
+                    callingNum--;
+                }
+            }
+
+            ModifyEvtHandlerDelList();
+        }
+
+        public void SendEvent<T>(T arg0)
+        {
+            lock (syncCallingNum)
+            {
+                callingNum++;
+            }
+
+            try
+            {
+                for (int i = 0; i < evtHandlerDelList.Count; i++)
+                {
+                    Action<T> ac = evtHandlerDelList[i] as Action<T>;
+                    if (ac != null)
+                    {
+                        ac(arg0);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LogException(e);
+            }
+            finally
+            {
+                lock (syncCallingNum)
+                {
+                    callingNum--;
+                }
+            }
+
+            ModifyEvtHandlerDelList();
+        }
+
+        public void SendEvent<T0, T1>(T0 arg0, T1 arg1)
+        {
+            lock (syncCallingNum)
+            {
+                callingNum++;
+            }
+
+            try
+            {
+                for (int i = 0; i < evtHandlerDelList.Count; i++)
+                {
+                    Action<T0, T1> ac = evtHandlerDelList[i] as Action<T0, T1>;
+                    if (ac != null)
+                    {
+                        ac(arg0, arg1);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LogException(e);
+            }
+            finally
+            {
+                lock (syncCallingNum)
+                {
+                    callingNum--;
+                }
+            }
+
+            ModifyEvtHandlerDelList();
+        }
+
+        public void SendEvent<T0, T1, T2>(T0 arg0, T1 arg1, T2 arg2)
+        {
+            lock (syncCallingNum)
+            {
+                callingNum++;
+            }
+
+            try
+            {
+                for (int i = 0; i < evtHandlerDelList.Count; i++)
+                {
+                    Action<T0, T1, T2> ac = evtHandlerDelList[i] as Action<T0, T1, T2>;
+                    if (ac != null)
+                    {
+                        ac(arg0, arg1, arg2);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LogException(e);
+            }
+            finally
+            {
+                lock (syncCallingNum)
+                {
+                    callingNum--;
+                }
+            }
+
+            ModifyEvtHandlerDelList();
+        }
+
+        public void SendEvent<T0, T1, T2, T3>(T0 arg0, T1 arg1, T2 arg2, T3 arg3)
+        {
+            lock (syncCallingNum)
+            {
+                callingNum++;
+            }
+
+            try
+            {
+                for (int i = 0; i < evtHandlerDelList.Count; i++)
+                {
+                    Action<T0, T1, T2, T3> ac = evtHandlerDelList[i] as Action<T0, T1, T2, T3>;
+                    if (ac != null)
+                    {
+                        ac(arg0, arg1, arg2, arg3);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LogException(e);
+            }
+            finally
+            {
+                lock (syncCallingNum)
+                {
+                    callingNum--;
+                }
+            }
+
+            ModifyEvtHandlerDelList();
+        }
     }
 }
