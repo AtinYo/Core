@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public interface IStateEvent
+public abstract class IStateEvent
 {
-    编写泛型事件机制
+
 }
 
 public delegate bool StateEnterTransitDelegate(IState leaveState, IStateEvent evt);
@@ -99,10 +99,10 @@ public abstract class IState
     {
         bool canEnter = true;
         StateEnterTransitDelegate enterDel = null;
-        if(stateEnterTransitDic != null)
+        if (stateEnterTransitDic != null)
         {
             stateEnterTransitDic.TryGetValue(leaveState, out enterDel);
-            if(enterDel != null)
+            if (enterDel != null)
             {
                 canEnter = enterDel(leaveState, evt);
             }
