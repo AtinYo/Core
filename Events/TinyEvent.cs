@@ -71,7 +71,7 @@ namespace Events
                     }
                 }
             }
-            catch (Exception e)
+            catch(Exception e)
             {
                 LogException(e);
             }
@@ -88,12 +88,12 @@ namespace Events
             stringBuilder.Append(exception.StackTrace);
             Debug.LogError(stringBuilder.ToString());
         }
-
+        
         private void ModifyEvtHandlerDelList()
         {
             if (removeList != null && removeList.Count > 0)
             {
-                for (int i = 0; i < removeList.Count; i++)
+                for(int i = 0; i < removeList.Count; i++)
                 {
                     evtHandlerDelList.Remove(removeList[i]);
                 }
@@ -107,7 +107,7 @@ namespace Events
                 }
             }
         }
-
+        
         public void SendEvent()
         {
             lock (syncCallingNum)

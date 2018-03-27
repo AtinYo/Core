@@ -99,10 +99,10 @@ public abstract class IState
     {
         bool canEnter = true;
         StateEnterTransitDelegate enterDel = null;
-        if (stateEnterTransitDic != null)
+        if(stateEnterTransitDic != null)
         {
             stateEnterTransitDic.TryGetValue(leaveState, out enterDel);
-            if (enterDel != null)
+            if(enterDel != null)
             {
                 canEnter = enterDel(leaveState, evt);
             }
