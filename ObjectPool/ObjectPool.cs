@@ -18,13 +18,11 @@ namespace ObjectPools
         {
             get
             {
-                return instance.Value;
+                if (instance == null || instance.Value == null || !instance.isInUse)
+                    return null;
+                else
+                    return instance.Value;
             }
-        }
-
-        public bool IsInvalid()
-        {
-            return instance == null || instance.Value == null || !instance.isInUse;
         }
 
         public T FetchFromPool()
