@@ -84,11 +84,11 @@ namespace ObjectPools
             private ObjectPoolInstance next;
             public bool IsFromPool { get; private set; }
 
-            public ObjectPoolInstance(bool _isFromPool)
+            public ObjectPoolInstance(ObjectPool<T> pool)
             {
                 IsInUse = false;
                 next = null;
-                IsFromPool = _isFromPool;
+                IsFromPool = pool != null;
             }
 
             public void SetNext(ObjectPoolInstance _next)
@@ -164,7 +164,7 @@ namespace ObjectPools
             }
             else
             {
-                curAvailableInst = new ObjectPoolInstance(false);//无法扩容的时候返回临时对象,它的回收交给GC
+                curAvailableInst = new ObjectPoolInstance(null);//无法扩容的时候返回临时对象,它的回收交给GC
             }
         }
 
@@ -178,10 +178,10 @@ namespace ObjectPools
 
         private void InitFreeList(int offSet, int len)
         {
-            freeList[offSet] = new ObjectPoolInstance(true);
+            freeList[offSet] = new ObjectPoolInstance(this);
             for (int i = 1 + offSet; i < len; i++)
             {
-                freeList[i] = new ObjectPoolInstance(true);
+                freeList[i] = new ObjectPoolInstance(this);
                 freeList[i - 1].SetNext(freeList[i]);
             }
             curAvailableInst = freeList[offSet];
