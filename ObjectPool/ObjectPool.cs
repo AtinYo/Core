@@ -38,9 +38,12 @@ namespace ObjectPools
 
         public void ReturnToPool()
         {
-            if (instance != null && instance.IsFromPool)
+            if (instance != null)
             {
-                pool.Return(instance);
+                if (instance.IsFromPool)
+                {
+                    pool.Return(instance);
+                }
                 instance = null;
             }
         }
@@ -101,7 +104,7 @@ namespace ObjectPools
             }
         }
 
-        private ObjectPoolInstance[] freeList;
+        private ObjectPoolInstance[] freeList;//对象池不用链表而是用数组实现,是考虑到cache命中的问题.链表cache命中率不稳定而且容易造成内存碎片
         private ObjectPoolInstance curAvailableInst;
         private ObjectPoolInstance temp;
         private int Size;
