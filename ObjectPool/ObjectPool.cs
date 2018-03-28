@@ -24,7 +24,7 @@ namespace ObjectPools
 
         public bool IsInvalid()
         {
-            return instance == null || instance.Value == null || !instance.isInUse;
+            return instance == null || instance.Value == null;
         }
 
         public T FetchFromPool()
@@ -38,7 +38,7 @@ namespace ObjectPools
 
         public void ReturnToPool()
         {
-            if (instance != null)
+            if (instance != null && instance.IsFromPool)
             {
                 pool.Return(instance);
                 instance = null;
@@ -80,13 +80,15 @@ namespace ObjectPools
                     return instance;
                 }
             }
-            public bool isInUse;
+            public bool IsInUse;
             private ObjectPoolInstance next;
+            public bool IsFromPool { get; private set; }
 
-            public ObjectPoolInstance()
+            public ObjectPoolInstance(bool _isFromPool)
             {
-                isInUse = false;
+                IsInUse = false;
                 next = null;
+                IsFromPool = _isFromPool;
             }
 
             public void SetNext(ObjectPoolInstance _next)
@@ -104,11 +106,15 @@ namespace ObjectPools
         private ObjectPoolInstance curAvailableInst;
         private ObjectPoolInstance temp;
         private int Size;
+        private int MaxSize;
+        private bool CanExpand;
         private static object syncRoot = new object();
 
-        public ObjectPool(int size = 5)
+        public ObjectPool(int maxSize, int size = 5)
         {
             Size = size <= 0 ? 5 : size;
+            MaxSize = maxSize <= 0 ? 10 : maxSize;
+            CanExpand = true;
             freeList = new ObjectPoolInstance[Size];
             InitFreeList(0, Size);
         }
@@ -122,7 +128,7 @@ namespace ObjectPools
                     Expand();
                 }
                 temp = curAvailableInst;
-                curAvailableInst.isInUse = true;
+                curAvailableInst.IsInUse = true;
                 curAvailableInst = curAvailableInst.GetNext();
                 temp.SetNext(null);
                 return temp;
@@ -134,7 +140,7 @@ namespace ObjectPools
             lock (syncRoot)
             {
                 temp = instance;
-                temp.isInUse = false;
+                temp.IsInUse = false;
                 temp.SetNext(curAvailableInst);
                 curAvailableInst = temp;
             }
@@ -142,12 +148,24 @@ namespace ObjectPools
 
         private void Expand()
         {
-            int newSize = Size * 2;
-            ObjectPoolInstance[] tempList = new ObjectPoolInstance[newSize];
-            Array.Copy(freeList, tempList, Size);
-            freeList = tempList;
-            InitFreeList(Size, newSize);
-            Size = newSize;
+            if (CanExpand)
+            {
+                int newSize = Size * 2;
+                if (newSize > MaxSize)
+                {
+                    newSize = MaxSize;
+                    CanExpand = false;
+                }
+                ObjectPoolInstance[] tempList = new ObjectPoolInstance[newSize];
+                Array.Copy(freeList, tempList, Size);
+                freeList = tempList;
+                InitFreeList(Size, newSize);
+                Size = newSize;
+            }
+            else
+            {
+                curAvailableInst = new ObjectPoolInstance(false);//无法扩容的时候返回临时对象,它的回收交给GC
+            }
         }
 
         /// <summary>
@@ -160,10 +178,10 @@ namespace ObjectPools
 
         private void InitFreeList(int offSet, int len)
         {
-            freeList[offSet] = new ObjectPoolInstance();
+            freeList[offSet] = new ObjectPoolInstance(true);
             for (int i = 1 + offSet; i < len; i++)
             {
-                freeList[i] = new ObjectPoolInstance();
+                freeList[i] = new ObjectPoolInstance(true);
                 freeList[i - 1].SetNext(freeList[i]);
             }
             curAvailableInst = freeList[offSet];
