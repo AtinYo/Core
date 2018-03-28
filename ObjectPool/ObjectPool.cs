@@ -74,6 +74,8 @@ namespace ObjectPools
             {
                 get
                 {
+                    //在项目的时候同事建议是按需分配,但是这样会造成跟链表一样的效果(链表cache命中率不稳定而且容易造成内存碎片)
+                    //但是好处是,针对于T的封装类是连续分布的,只是在真正访问T对象才有可能cache缺失,而且还可以减轻内存负担.暂时先这么做吧
                     if (instance == null)
                     {
                         instance = new T();
@@ -104,7 +106,7 @@ namespace ObjectPools
             }
         }
 
-        private ObjectPoolInstance[] freeList;//对象池不用链表而是用数组实现,是考虑到cache命中的问题.链表cache命中率不稳定而且容易造成内存碎片
+        private ObjectPoolInstance[] freeList;//对象池不用链表而是用数组实现,是考虑到cache命中的问题.链表cache命中率不稳定而且容易造成内存碎片,但是对于T[]并不是数组,因为延时分配内存了,看ObjectPoolInstance.Value的定义
         private ObjectPoolInstance curAvailableInst;
         private ObjectPoolInstance temp;
         private int Size;
