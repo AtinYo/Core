@@ -18,11 +18,13 @@ namespace ObjectPools
         {
             get
             {
-                if (instance == null || instance.Value == null || !instance.isInUse)
-                    return null;
-                else
-                    return instance.Value;
+                return instance != null ? instance.Value : null;
             }
+        }
+
+        public bool IsInvalid()
+        {
+            return instance == null || instance.Value == null || !instance.isInUse;
         }
 
         public T FetchFromPool()
@@ -60,19 +62,29 @@ namespace ObjectPools
         }
     }
 
-    
+
 
     public class ObjectPool<T> where T : class, new()
     {
         public class ObjectPoolInstance
         {
-            public T Value;
+            private T instance;
+            public T Value
+            {
+                get
+                {
+                    if (instance == null)
+                    {
+                        instance = new T();
+                    }
+                    return instance;
+                }
+            }
             public bool isInUse;
             private ObjectPoolInstance next;
 
             public ObjectPoolInstance()
             {
-                Value = new T();
                 isInUse = false;
                 next = null;
             }
@@ -105,14 +117,14 @@ namespace ObjectPools
         {
             lock (syncRoot)
             {
-                if(curAvailableInst == null)
+                if (curAvailableInst == null)
                 {
                     Expand();
                 }
                 temp = curAvailableInst;
-                temp.isInUse = true;
-                temp.SetNext(null);
+                curAvailableInst.isInUse = true;
                 curAvailableInst = curAvailableInst.GetNext();
+                temp.SetNext(null);
                 return temp;
             }
         }
@@ -131,7 +143,7 @@ namespace ObjectPools
         private void Expand()
         {
             int newSize = Size * 2;
-            ObjectPoolInstance[] tempList= new ObjectPoolInstance[newSize];
+            ObjectPoolInstance[] tempList = new ObjectPoolInstance[newSize];
             Array.Copy(freeList, tempList, Size);
             freeList = tempList;
             InitFreeList(Size, newSize);
