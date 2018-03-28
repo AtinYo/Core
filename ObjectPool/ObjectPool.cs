@@ -53,7 +53,7 @@ namespace ObjectPools
         public ObjectPoolRef(ObjectPool<T> objPool)
         {
             pool = objPool;
-#if NeedCheckPoolIsNull
+#if NEED_CHECK_POOL_IS_NULL
             if(pool == null)
             {
                 throw new Exception("pool is null when calling the constructor in ObjectPoolRef!");
@@ -61,9 +61,7 @@ namespace ObjectPools
 #endif
         }
     }
-
-
-
+    
     public class ObjectPool<T> where T : class, new()
     {
         public class ObjectPoolInstance
@@ -80,6 +78,7 @@ namespace ObjectPools
                     return instance;
                 }
             }
+
             public bool IsInUse;
             private ObjectPoolInstance next;
             public bool IsFromPool { get; private set; }
