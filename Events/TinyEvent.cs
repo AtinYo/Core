@@ -1,4 +1,12 @@
-﻿using System;
+﻿/************************************************************
+     File      : TinyEvent.cs
+     brief     : Event mechanism for communication between different modules.
+     author    : Atin
+     version   : 1.0
+     date      : 2018/04/04 14:00:00
+     copyright : 2018, Atin. All rights reserved.
+**************************************************************/
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
