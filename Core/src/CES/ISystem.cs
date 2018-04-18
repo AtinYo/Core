@@ -6,14 +6,17 @@
      date      : 2018/04/04 14:00:00
      copyright : 2018, Atin. All rights reserved.
 **************************************************************/
-namespace CES
+namespace Core
 {
-    /// <summary>
-    /// Method provider.
-    /// Don't add any unnecessary data when inherited from this.
-    /// </summary>
-    public abstract class ISystem
+    namespace CES
     {
+        /// <summary>
+        /// Method provider.
+        /// Don't add any unnecessary data when inherited from this.
+        /// </summary>
+        public abstract class ISystem
+        {
 
+        }
     }
 }

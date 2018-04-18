@@ -6,13 +6,16 @@
      date      : 2018/04/04 14:00:00
      copyright : 2018, Atin. All rights reserved.
 **************************************************************/
-namespace CES
+namespace Core
 {
-    /// <summary>
-    /// Only keep the global identity when inherited from this.
-    /// </summary>
-    public abstract class IEntity
+    namespace CES
     {
-        public virtual long GID;
+        /// <summary>
+        /// Only keep the global identity when inherited from this.
+        /// </summary>
+        public abstract class IEntity
+        {
+            public long GID;
+        }
     }
 }

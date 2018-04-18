@@ -1,19 +1,16 @@
 ﻿/************************************************************
-     File      : IComponent.cs
-     brief     : The component interface in CES.
+     File      : IActorComponent.cs
+     brief     : Basic actor component.
      author    : Atin
      version   : 1.0
      date      : 2018/04/04 14:00:00
      copyright : 2018, Atin. All rights reserved.
 **************************************************************/
-namespace CES
+using Core.CES;
+namespace ActorComponents
 {
-    /// <summary>
-    /// Data container.
-    /// Don't add any method when inherited from this.
-    /// </summary>
-    public abstract class IComponent
+    public class IActorComponent: IComponent
     {
-
+        
     }
 }
