@@ -27,7 +27,8 @@ namespace Core
 
             private static object syncListRoot = new object();
             private static object syncCallingNum = new object();
-            private int callingNum = 0;//当前调用的delegate数目
+            private int callingNum = 0;//当前调用的delegate数目,不加lock的时候,这个变量用于控制在进入Invoke的时候,Invoke执行外部函数过程中无法修改时间回调列表.
+            //举个例子,tinyEvent注册了func1,Invoke的时候调用func1,如果func1会修改evtHandlerDelList,就会破坏调用结构,所以才会有这么一个变量来处理
 
             public void RegisterEventHandler(EventHandlerDelegate evtHandlerDel)
             {
