@@ -24,6 +24,7 @@ namespace Core
     {
         public IStateMachine stateMachine { get; protected set; }
 
+        private StateEnterTransitDelegate allStateEnterTransit;//全部状态进入到this状态的一次状态(为了方便实现进入全局状态的转换而增加的)
         private Dictionary<int, StateEnterTransitDelegate> stateEnterTransitDic;//key是要离开状态的类型,enter的状态是自身
         private Dictionary<int, StateLeaveTransitDelegate> stateLeaveTransitDic;//key是要进入的状态的类型,leave的状态是自身
 
@@ -60,6 +61,16 @@ namespace Core
         public virtual void Destroy()
         {
 
+        }
+
+        protected void InitAllStateEnterTransit(StateEnterTransitDelegate enterTransit)
+        {
+            allStateEnterTransit = enterTransit;
+        }
+
+        protected void ClearAllStateEnterTransit()
+        {
+            allStateEnterTransit = null;
         }
 
         protected void AddStateEnterTransit(int stateFlags, StateEnterTransitDelegate enterTransit)
@@ -106,7 +117,7 @@ namespace Core
 
         public bool CanEnter(IState leaveState, IStateEvent evt)
         {
-            bool canEnter = true;
+            bool canEnter = false;//还是默认不能进入,如果默认可以进入,那么在不加状态之间的切换链接情况下,可以默认退出可以默认进入,那么切换链接就没有意义了
             StateEnterTransitDelegate enterDel = null;
             if (stateEnterTransitDic != null)
             {
@@ -115,6 +126,10 @@ namespace Core
                 {
                     canEnter = enterDel(leaveState, evt);
                 }
+            }
+            if(allStateEnterTransit != null)
+            {
+                canEnter |= allStateEnterTransit(leaveState, evt);
             }
             return canEnter;
         }
