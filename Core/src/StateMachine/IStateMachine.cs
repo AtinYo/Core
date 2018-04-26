@@ -16,6 +16,7 @@ namespace Core
     public abstract class IStateMachine
     {
         public IState defaultState;
+        public IState preState;
         public IState curState;
 
         public abstract void Init();
@@ -24,7 +25,8 @@ namespace Core
 
         public virtual void Update(float deltaTime)
         {
-            curState.Update(deltaTime);
+            if (curState != null)
+                curState.Update(deltaTime);
         }
 
         /// <summary>
@@ -54,22 +56,28 @@ namespace Core
             }
         }
 
-        public void GotoState(IState nextState, IStateEvent evt)
+        protected void GotoState(IState nextState, IStateEvent evt)
         {
             curState.Leave(evt);
+            preState = curState;
             curState = nextState;
             curState.Enter(evt);
         }
 
-        public bool TryTransitState(IState nextState, IStateEvent evt)
+        protected bool TryTransitState(IState nextState, IStateEvent evt)
         {
             return TryTransitState(curState, nextState, evt);
         }
 
-        public bool TryTransitState(IState curState, IState nextState, IStateEvent evt)
+        protected bool TryTransitState(IState curState, IState nextState, IStateEvent evt)
         {
             return curState.CanLeave(nextState, evt) && nextState.CanEnter(curState, evt);
         }
 
+        protected virtual bool HandleMessage(IStateMsg msg)
+        {
+            return curState != null && curState.OnMessage(msg);
+        }
+        //在该类的派生类中,建议利用TinyEvent实现消息机制的状态转换收发、实现 状态对消息收发处理的 通知
     }
 }

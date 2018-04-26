@@ -17,6 +17,11 @@ namespace Core
 
     }
 
+    public abstract class IStateMsg
+    {
+
+    }
+
     public delegate bool StateEnterTransitDelegate(IState leaveState, IStateEvent evt);
     public delegate bool StateLeaveTransitDelegate(IState enterState, IStateEvent evt);
 
@@ -162,6 +167,11 @@ namespace Core
         public virtual void Update(float deltaTime)
         {
 
+        }
+
+        public virtual bool OnMessage(IStateMsg msg)
+        {
+            return false;
         }
     }
 }
