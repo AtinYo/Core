@@ -18,7 +18,7 @@ namespace Core
         /// 因为c#不允许重载=操作符,为了解决对象池对象被多个引用变量引用的时候,不同引用之间的操作导致逻辑错误(一个引用放回对象池,另一个引用并不知道),利用ObjectPoolRef类以及编码规范来避免这个问题.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public class ObjectPoolRef<T> where T : class, new()
+        public class ObjectPoolRef<T> : IDisposable where T : class, new()
         {
             private ObjectPool<T> pool = null;
             private ObjectPool<T>.ObjectPoolInstance instance = null;
@@ -62,15 +62,29 @@ namespace Core
 
             }
 
-            public ObjectPoolRef(ObjectPool<T> objPool)
+            public ObjectPoolRef(ObjectPool<T> _objPool)
             {
-                pool = objPool;
+                pool = _objPool;
 #if NEED_CHECK_POOL_IS_NULL
             if(pool == null)
             {
                 throw new Exception("pool is null when calling the constructor in ObjectPoolRef!");
             }
 #endif
+            }
+
+            /// <summary>
+            /// 释放资源链接,扫尾工作等
+            /// </summary>
+            public virtual void Dispose()
+            {
+                
+            }
+
+            ~ObjectPoolRef()
+            {
+                ReturnToPool();//当ObjectPoolRef对象本身被GC释放时,应及时归还Instance给对象池
+                Dispose();
             }
         }
 
@@ -97,11 +111,11 @@ namespace Core
                 private ObjectPoolInstance next;
                 public bool IsFromPool { get; private set; }
 
-                public ObjectPoolInstance(ObjectPool<T> pool)
+                public ObjectPoolInstance(ObjectPool<T> _pool)
                 {
                     IsInUse = false;
                     next = null;
-                    IsFromPool = pool != null;
+                    IsFromPool = _pool != null;
                 }
 
                 public void SetNext(ObjectPoolInstance _next)
@@ -118,18 +132,18 @@ namespace Core
             private ObjectPoolInstance[] freeList;//对象池不用链表而是用数组实现,是考虑到cache命中的问题.链表cache命中率不稳定而且容易造成内存碎片,但是对于T[]并不是数组,因为延时分配内存了,看ObjectPoolInstance.Value的定义
             private ObjectPoolInstance curAvailableInst;
             private ObjectPoolInstance temp;
-            private int Size;
-            private int MaxSize;
-            private bool CanExpand;
+            private int size;
+            private int maxSize;
+            private bool canExpand;
             private static object syncRoot = new object();
 
-            public ObjectPool(int maxSize, int size = 5)
+            public ObjectPool(int _maxSize, int _size = 5)
             {
-                Size = size <= 0 ? 5 : size;
-                MaxSize = maxSize <= 0 ? 10 : maxSize;
-                CanExpand = true;
-                freeList = new ObjectPoolInstance[Size];
-                InitFreeList(0, Size);
+                size = _size <= 0 ? 5 : _size;
+                maxSize = _maxSize <= 0 ? 10 : _maxSize;
+                canExpand = true;
+                freeList = new ObjectPoolInstance[size];
+                InitFreeList(0, size);
             }
 
             public ObjectPoolInstance Fetch()
@@ -148,11 +162,11 @@ namespace Core
                 }
             }
 
-            public void Return(ObjectPoolInstance instance)
+            public void Return(ObjectPoolInstance _instance)
             {
                 lock (syncRoot)
                 {
-                    temp = instance;
+                    temp = _instance;
                     temp.IsInUse = false;
                     temp.SetNext(curAvailableInst);
                     curAvailableInst = temp;
@@ -161,19 +175,19 @@ namespace Core
 
             private void Expand()
             {
-                if (CanExpand)
+                if (canExpand)
                 {
-                    int newSize = Size * 2;
-                    if (newSize > MaxSize)
+                    int newSize = size * 2;
+                    if (newSize > maxSize)
                     {
-                        newSize = MaxSize;
-                        CanExpand = false;
+                        newSize = maxSize;
+                        canExpand = false;
                     }
                     ObjectPoolInstance[] tempList = new ObjectPoolInstance[newSize];
-                    Array.Copy(freeList, tempList, Size);
+                    Array.Copy(freeList, tempList, size);
                     freeList = tempList;
-                    InitFreeList(Size, newSize);
-                    Size = newSize;
+                    InitFreeList(size, newSize);
+                    size = newSize;
                 }
                 else
                 {
@@ -189,15 +203,15 @@ namespace Core
 
             }
 
-            private void InitFreeList(int offSet, int len)
+            private void InitFreeList(int _offSet, int _len)
             {
-                freeList[offSet] = new ObjectPoolInstance(this);
-                for (int i = 1 + offSet; i < len; i++)
+                freeList[_offSet] = new ObjectPoolInstance(this);
+                for (int i = 1 + _offSet; i < _len; i++)
                 {
                     freeList[i] = new ObjectPoolInstance(this);
                     freeList[i - 1].SetNext(freeList[i]);
                 }
-                curAvailableInst = freeList[offSet];
+                curAvailableInst = freeList[_offSet];
             }
         }
     }
