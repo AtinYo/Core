@@ -18,7 +18,7 @@ namespace Core
         /// 因为c#不允许重载=操作符,为了解决对象池对象被多个引用变量引用的时候,不同引用之间的操作导致逻辑错误(一个引用放回对象池,另一个引用并不知道),利用ObjectPoolRef类以及编码规范来避免这个问题.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public class ObjectPoolRef<T> : IDisposable where T : class, new()
+        public class ObjectPoolRef<T> where T : class, IDisposable, new()
         {
             private ObjectPool<T> pool = null;
             private ObjectPool<T>.ObjectPoolInstance instance = null;
@@ -49,6 +49,10 @@ namespace Core
             {
                 if (instance != null)
                 {
+                    if(instance.Value != null)
+                    {
+                        instance.Value.Dispose();//归还到对象池前释放对其他资源的引用
+                    }
                     if (instance.IsFromPool)
                     {
                         pool.Return(instance);
@@ -72,19 +76,10 @@ namespace Core
             }
 #endif
             }
-
-            /// <summary>
-            /// 释放资源链接,扫尾工作等
-            /// </summary>
-            public virtual void Dispose()
-            {
-                
-            }
-
+            
             ~ObjectPoolRef()
             {
                 ReturnToPool();//当ObjectPoolRef对象本身被GC释放时,应及时归还Instance给对象池
-                Dispose();
             }
         }
 
