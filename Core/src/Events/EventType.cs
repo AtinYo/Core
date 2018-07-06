@@ -1,0 +1,15 @@
+﻿/************************************************************
+     File      : EventType.cs
+     brief     : EventType for EventManager.
+     author    : Atin
+     version   : 1.0
+     date      : 2018/06/27 11:44:00
+     copyright : 2018, Atin. All rights reserved.
+**************************************************************/
+namespace Core.src.Events
+{
+    public enum EventType
+    {
+        Max,
+    }
+}
