@@ -46,7 +46,10 @@
     <Compile Include="src\CES\IEntity.cs" />
     <Compile Include="src\CES\ISystem.cs" />
     <Compile Include="src\Common\CInterface.cs" />
+    <Compile Include="src\Common\Tools.cs" />
     <Compile Include="src\Components\ActorComponents\IActorComponent.cs" />
+    <Compile Include="src\Events\EventManager.cs" />
+    <Compile Include="src\Events\EventType.cs" />
     <Compile Include="src\Events\TinyEvent.cs" />
     <Compile Include="src\ObjectPool\ObjectPool.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
