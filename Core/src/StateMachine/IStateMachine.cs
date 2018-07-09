@@ -7,11 +7,8 @@
      copyright : 2018, Atin. All rights reserved.
 **************************************************************/
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 
-namespace Core
+namespace Core.src.StateMachine
 {
     public abstract class IStateMachine
     {

@@ -7,12 +7,9 @@
      copyright : 2018, Atin. All rights reserved.
 **************************************************************/
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-namespace Core
+namespace Core.src
 {
-    namespace CInterfaces
+    namespace Singleton
     {
         public abstract class TSingleton<T> where T : class
         {
@@ -47,10 +44,18 @@ namespace Core
                 }
             }
         }
+    }
 
+    namespace SystemInterface
+    {
         public interface IUpdate
         {
             void Update();
+        }
+
+        public interface IReset
+        {
+            void Reset();
         }
     }
 }

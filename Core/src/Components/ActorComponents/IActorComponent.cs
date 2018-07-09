@@ -6,8 +6,9 @@
      date      : 2018/04/04 14:00:00
      copyright : 2018, Atin. All rights reserved.
 **************************************************************/
-using Core.CES;
-namespace ActorComponents
+using Core.src.CES;
+
+namespace Core.src.Components.ActorComponents
 {
     public class IActorComponent: IComponent
     {

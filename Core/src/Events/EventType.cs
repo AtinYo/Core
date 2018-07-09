@@ -10,6 +10,7 @@ namespace Core.src.Events
 {
     public enum EventType
     {
+        None = 0,
         Max,
     }
 }

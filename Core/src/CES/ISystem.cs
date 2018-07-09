@@ -6,7 +6,7 @@
      date      : 2018/04/04 14:00:00
      copyright : 2018, Atin. All rights reserved.
 **************************************************************/
-namespace Core
+namespace Core.src
 {
     namespace CES
     {

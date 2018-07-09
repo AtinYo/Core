@@ -6,32 +6,28 @@
      date      : 2018/06/27 11:23:00
      copyright : 2018, Atin. All rights reserved.
 **************************************************************/
-using Core.CInterfaces;
-using Core.Events;
-using Core.src.Tools;
+using Core.src.Singleton;
+using Core.src.SystemInterface;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 
 namespace Core.src.Events
 {
-    public class EventManager : TSingleton<EventManager>, IUpdate
+    public class EventManager : TSingleton<EventManager>, IUpdate, IReset
     {
-        private int scheduleEventLen
-        {
-            get
-            {
-                return 10;//根据当前事件数量作调整
-            }
-        }
-        
-        private Dictionary<EventType, ArrayList> eventMapDic;//List<object>存放的是不同T的Tiny<T>(比如说List有Tiny<T1>和Tiny<T2>等等),
+        private Dictionary<EventType, ArrayList> eventMapDic;//ArrayList存放的是不同T的Tiny<T>(比如说List有Tiny<T1>和Tiny<T2>等等),
                                                              //以便实现同一个eventType可以有不同的类型的handler[通过发事件传入的参数才确定类型]
-                                                             //ArrayList存放的是object,因此可以存放不同Tiny<T>,跟list<object>一样
+
+        private Queue<object> eventParamsQue;//用于处理异步事件的事件参数队列
+
+        private bool eventParamsQueMutex;//用于单线程内作加锁用(相当于TinyEvent的callnum)
 
         private EventManager()
         {
             eventMapDic = new Dictionary<EventType, ArrayList>();
+            eventParamsQue = new Queue<object>();
+            eventParamsQueMutex = false;
         }
 
         private bool AddEventHandler<T>(EventType eventType, T handler)
@@ -104,6 +100,7 @@ namespace Core.src.Events
                 if (tinyEvent != null)
                 {
                     tinyEvent.UnRegisterEventHandler(handler);
+                    //本应该清除事件参数队列相应的EventParams,但是这个参数是持有对TinyEvent的引用,通过SendEvent去处理的,在上面已经remove了TinyEvent的handler,所以不用处理貌似也没毛病
                 }
             }
         }
@@ -111,6 +108,7 @@ namespace Core.src.Events
         private void RemoveEventHandlerByEventType(EventType eventType)
         {
             eventMapDic.Remove(eventType);
+            RemoveEvtParamsByEventType(eventType);//还要清除事件参数队列相应的EventParams
         }
 
         #region 注册/注销
@@ -131,6 +129,10 @@ namespace Core.src.Events
         #endregion
 
         #region 事件处理
+        /// <summary>
+        /// 同步发事件.
+        /// </summary>
+        /// <param name="eventType"></param>
         public void SendEvnetSync(EventType eventType)
         {
             ArrayList list = null;
@@ -140,7 +142,7 @@ namespace Core.src.Events
                 list = eventMapDic[eventType];
                 if (list != null)
                 {
-                    for(int i = 0; i < list.Count; i++)
+                    for (int i = 0; i < list.Count; i++)
                     {
                         tinyEvt = list[i] as TinyEvent<Action>;
                         if (tinyEvt != null)
@@ -152,6 +154,12 @@ namespace Core.src.Events
             }
         }
 
+        /// <summary>
+        /// 同步发事件.
+        /// </summary>
+        /// <typeparam name="T1"></typeparam>
+        /// <param name="eventType"></param>
+        /// <param name="arg1"></param>
         public void SendEvnetSync<T1>(EventType eventType, T1 arg1)
         {
             ArrayList list = null;
@@ -173,6 +181,14 @@ namespace Core.src.Events
             }
         }
 
+        /// <summary>
+        /// 同步发事件.
+        /// </summary>
+        /// <typeparam name="T1"></typeparam>
+        /// <typeparam name="T2"></typeparam>
+        /// <param name="eventType"></param>
+        /// <param name="arg1"></param>
+        /// <param name="arg2"></param>
         public void SendEvnetSync<T1, T2>(EventType eventType, T1 arg1, T2 arg2)
         {
             ArrayList list = null;
@@ -194,6 +210,16 @@ namespace Core.src.Events
             }
         }
 
+        /// <summary>
+        /// 同步发事件.
+        /// </summary>
+        /// <typeparam name="T1"></typeparam>
+        /// <typeparam name="T2"></typeparam>
+        /// <typeparam name="T3"></typeparam>
+        /// <param name="eventType"></param>
+        /// <param name="arg1"></param>
+        /// <param name="arg2"></param>
+        /// <param name="arg3"></param>
         public void SendEvnetSync<T1, T2, T3>(EventType eventType, T1 arg1, T2 arg2, T3 arg3)
         {
             ArrayList list = null;
@@ -215,6 +241,18 @@ namespace Core.src.Events
             }
         }
 
+        /// <summary>
+        /// 同步发事件.
+        /// </summary>
+        /// <typeparam name="T1"></typeparam>
+        /// <typeparam name="T2"></typeparam>
+        /// <typeparam name="T3"></typeparam>
+        /// <typeparam name="T4"></typeparam>
+        /// <param name="eventType"></param>
+        /// <param name="arg1"></param>
+        /// <param name="arg2"></param>
+        /// <param name="arg3"></param>
+        /// <param name="agr4"></param>
         public void SendEvnetSync<T1, T2, T3, T4>(EventType eventType, T1 arg1, T2 arg2, T3 arg3, T4 agr4)
         {
             ArrayList list = null;
@@ -237,20 +275,196 @@ namespace Core.src.Events
         }
 
         /// <summary>
-        /// 异步的话需要实现事件参数缓冲区.起始做起来虽然没有box/unbox但是缓存参数是一个类,即便缓冲也是很不好
+        /// 异步发事件.现在的实现感觉不是很好,看以后有没有更好的方式
         /// </summary>
         /// <param name="eventType"></param>
         public void SendEvnetAsync(EventType eventType)
         {
-            //异步的话,大概思路是update的时候从参数队列取出来然后调SendEventSync,所以...
-            //需要实现事件参数缓冲区.起始做起来虽然没有box/unbox但是缓存参数是一个类,即便缓冲也是很不好,有空再考虑怎么写
+            ArrayList list = null;
+            TinyEvent<Action> tinyEvt = null;
+            if (eventMapDic.ContainsKey(eventType))
+            {
+                list = eventMapDic[eventType];
+                if (list != null)
+                {
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        tinyEvt = list[i] as TinyEvent<Action>;
+                        if (tinyEvt != null)
+                        {
+                            eventParamsQue.Enqueue(new EventParams(tinyEvt, eventType));//这种new操作可以考虑用对象池分配,但是类型太多处理还要注意下
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 异步发事件.
+        /// </summary>
+        /// <typeparam name="T1"></typeparam>
+        /// <param name="eventType"></param>
+        /// <param name="arg1"></param>
+        public void SendEvnetAsync<T1>(EventType eventType, T1 arg1)
+        {
+            ArrayList list = null;
+            TinyEvent<Action<T1>> tinyEvt = null;
+            if (eventMapDic.ContainsKey(eventType))
+            {
+                list = eventMapDic[eventType];
+                if (list != null)
+                {
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        tinyEvt = list[i] as TinyEvent<Action<T1>>;
+                        if (tinyEvt != null)
+                        {
+                            eventParamsQue.Enqueue(new EventParams<T1>(tinyEvt, eventType, arg1));//这种new操作可以考虑用对象池分配,但是类型太多处理还要注意下
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 异步发事件.
+        /// </summary>
+        /// <typeparam name="T1"></typeparam>
+        /// <typeparam name="T2"></typeparam>
+        /// <param name="eventType"></param>
+        /// <param name="arg1"></param>
+        /// <param name="arg2"></param>
+        public void SendEvnetAsync<T1, T2>(EventType eventType, T1 arg1, T2 arg2)
+        {
+            ArrayList list = null;
+            TinyEvent<Action<T1, T2>> tinyEvt = null;
+            if (eventMapDic.ContainsKey(eventType))
+            {
+                list = eventMapDic[eventType];
+                if (list != null)
+                {
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        tinyEvt = list[i] as TinyEvent<Action<T1, T2>>;
+                        if (tinyEvt != null)
+                        {
+                            eventParamsQue.Enqueue(new EventParams<T1, T2>(tinyEvt, eventType, arg1, arg2));//这种new操作可以考虑用对象池分配,但是类型太多处理还要注意下
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 异步发事件.
+        /// </summary>
+        /// <typeparam name="T1"></typeparam>
+        /// <typeparam name="T2"></typeparam>
+        /// <typeparam name="T3"></typeparam>
+        /// <param name="eventType"></param>
+        /// <param name="arg1"></param>
+        /// <param name="arg2"></param>
+        /// <param name="arg3"></param>
+        public void SendEvnetAsync<T1, T2, T3>(EventType eventType, T1 arg1, T2 arg2, T3 arg3)
+        {
+            ArrayList list = null;
+            TinyEvent<Action<T1, T2, T3>> tinyEvt = null;
+            if (eventMapDic.ContainsKey(eventType))
+            {
+                list = eventMapDic[eventType];
+                if (list != null)
+                {
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        tinyEvt = list[i] as TinyEvent<Action<T1, T2, T3>>;
+                        if (tinyEvt != null)
+                        {
+                            eventParamsQue.Enqueue(new EventParams<T1, T2, T3>(tinyEvt, eventType, arg1, arg2, arg3));//这种new操作可以考虑用对象池分配,但是类型太多处理还要注意下
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 异步发事件.
+        /// </summary>
+        /// <typeparam name="T1"></typeparam>
+        /// <typeparam name="T2"></typeparam>
+        /// <typeparam name="T3"></typeparam>
+        /// <typeparam name="T4"></typeparam>
+        /// <param name="eventType"></param>
+        /// <param name="arg1"></param>
+        /// <param name="arg2"></param>
+        /// <param name="arg3"></param>
+        /// <param name="arg4"></param>
+        public void SendEvnetAsync<T1, T2, T3, T4>(EventType eventType, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        {
+            ArrayList list = null;
+            TinyEvent<Action<T1, T2, T3, T4>> tinyEvt = null;
+            if (eventMapDic.ContainsKey(eventType))
+            {
+                list = eventMapDic[eventType];
+                if (list != null)
+                {
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        tinyEvt = list[i] as TinyEvent<Action<T1, T2, T3, T4>>;
+                        if (tinyEvt != null)
+                        {
+                            eventParamsQue.Enqueue(new EventParams<T1, T2, T3, T4>(tinyEvt, eventType, arg1, arg2, arg3, arg4));//这种new操作可以考虑用对象池分配,但是类型太多处理还要注意下
+                        }
+                    }
+                }
+            }
         }
         #endregion
 
-
+        private IHandlerEvent evtParams = null;
         public void Update()
         {
+            eventParamsQueMutex = true;
+            while (eventParamsQue.Count > 0)
+            {
+                evtParams = eventParamsQue.Dequeue() as IHandlerEvent;
+                if (evtParams != null)
+                {
+                    evtParams.HandlerEvent();
+                    evtParams = null;
+                }
+            }
+            eventParamsQueMutex = false;
+        }
 
+        /// <summary>
+        /// 消耗蛮高,调用频率尽量低一点.
+        /// </summary>
+        /// <param name="evtType"></param>
+        private void RemoveEvtParamsByEventType(EventType evtType)
+        {
+            if (!eventParamsQueMutex)
+            {
+                eventParamsQueMutex = true;
+
+                List<object> evtParamsList = new List<object>(eventParamsQue);
+                if (evtParamsList != null)
+                {
+                    evtParamsList.RemoveAll(evtParam =>
+                    {
+                        return (evtParam as IGetEventType) != null && (evtParam as IGetEventType).GetEventType() == evtType;
+                    });
+                    eventParamsQue = new Queue<object>(evtParamsList);
+                }
+
+                eventParamsQueMutex = false;
+            }
+        }
+
+        public void Reset()
+        {
+            eventMapDic.Clear();
+            eventParamsQue.Clear();
+            eventParamsQueMutex = false;
         }
     }
 }

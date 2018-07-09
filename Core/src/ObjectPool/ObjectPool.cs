@@ -7,12 +7,9 @@
      copyright : 2018, Atin. All rights reserved.
 **************************************************************/
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-namespace Core
+namespace Core.src
 {
-    namespace ObjectPools
+    namespace ObjectPool
     {
         /// <summary>
         /// 因为c#不允许重载=操作符,为了解决对象池对象被多个引用变量引用的时候,不同引用之间的操作导致逻辑错误(一个引用放回对象池,另一个引用并不知道),利用ObjectPoolRef类以及编码规范来避免这个问题.

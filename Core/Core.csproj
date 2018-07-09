@@ -49,6 +49,7 @@
     <Compile Include="src\Common\Tools.cs" />
     <Compile Include="src\Components\ActorComponents\IActorComponent.cs" />
     <Compile Include="src\Events\EventManager.cs" />
+    <Compile Include="src\Events\EventParams.cs" />
     <Compile Include="src\Events\EventType.cs" />
     <Compile Include="src\Events\TinyEvent.cs" />
     <Compile Include="src\ObjectPool\ObjectPool.cs" />

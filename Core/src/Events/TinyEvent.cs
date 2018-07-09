@@ -7,13 +7,12 @@
      copyright : 2018, Atin. All rights reserved.
 **************************************************************/
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 namespace Core
 {
-    namespace Events
+    namespace src.Events
     {
         /// <summary>
         /// EventHandlerDelegate 处理事件函数的委托,可以有多个参数,但是没返回值
